@@ -74,10 +74,7 @@ impl Default for Device {
     }
 }
 
-fn serial_write(
-    port: &mut BufReader<Box<dyn SerialPort>>,
-    cmd: &[u8],
-) -> Result<usize, std::io::Error> {
+fn serial_write(port: &mut BufReader<Box<dyn SerialPort>>, cmd: &[u8]) -> std::io::Result<usize> {
     let write_port = port.get_mut();
     write_port.write(cmd)
 }
@@ -85,7 +82,7 @@ fn serial_write(
 fn serial_read(
     port: &mut BufReader<Box<dyn SerialPort>>,
     serial_buf: &mut String,
-) -> Result<usize, std::io::Error> {
+) -> std::io::Result<usize> {
     port.read_line(serial_buf)
 }
 
@@ -201,24 +198,21 @@ fn disconnected(
     devices: &[String],
     device_lock: &Arc<RwLock<Device>>,
 ) -> Option<Print> {
+    let name = &device.name;
     // disconnection by button press
     if let Ok(read_guard) = device_lock.read() {
-        if device.name != read_guard.name {
-            return Some(Print::Ok(format!(
-                "Disconnected from serial port: {}",
-                device.name
-            )));
+        if name != &read_guard.name {
+            return Some(Print::Ok(format!("Disconnected from serial port: {name}")));
         }
     }
 
     // other types of disconnection (e.g. unplugging, power down)
-    if !devices.contains(&device.name) {
+    if !devices.contains(name) {
         if let Ok(mut write_guard) = device_lock.write() {
             write_guard.name.clear();
         }
         return Some(Print::Error(format!(
-            "Device has disconnected from serial port: {}",
-            device.name
+            "Device has disconnected from serial port: {name}"
         )));
     }
 
