@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use super::DurationExt;
 
 use eframe::egui::panel::Side;
 use eframe::egui::{
@@ -649,10 +649,10 @@ impl MyApp {
                             .selected_text(self.serial_devices.devices[self.device_idx].timeout.as_millis().to_string())
                             .width(55.0)
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, Duration::from_millis(0), "0");
-                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, Duration::from_millis(10), "10");
-                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, Duration::from_millis(100), "100");
-                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, Duration::from_millis(1000), "1000");
+                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, 0.millis(), "0");
+                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, 10.millis(), "10");
+                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, 100.millis(), "100");
+                                ui.selectable_value(&mut self.serial_devices.devices[self.device_idx].timeout, 1000.millis(), "1000");
                             });
                     });
 
@@ -921,7 +921,7 @@ impl eframe::App for MyApp {
             }
         }
 
-        std::thread::sleep(Duration::from_millis((1000.0 / MAX_FPS) as u64));
+        std::thread::sleep(((1000.0 / MAX_FPS) as u64).millis());
     }
 
     fn save(&mut self, _storage: &mut dyn Storage) {

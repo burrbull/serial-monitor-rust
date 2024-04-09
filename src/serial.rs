@@ -2,6 +2,7 @@ use std::io::{BufRead, BufReader};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
+use super::DurationExt;
 
 use preferences::Preferences;
 use serde::{Deserialize, Serialize};
@@ -69,7 +70,7 @@ impl Default for Device {
             flow_control: FlowControl::None,
             parity: Parity::None,
             stop_bits: StopBits::One,
-            timeout: Duration::from_millis(0),
+            timeout: 0.millis(),
         }
     }
 }
@@ -109,7 +110,7 @@ pub fn serial_thread(
         let device = get_device(&devices_lock, &device_lock);
 
         let mut port = match serialport::new(&device.name, device.baud_rate)
-            .timeout(Duration::from_millis(100))
+            .timeout(100.millis())
             .open()
         {
             Ok(p) => {
@@ -131,7 +132,7 @@ pub fn serial_thread(
                 }
                 print_to_console(
                     &print_lock,
-                    Print::Error(format!("Error connecting: {}", err)),
+                    Print::Error(format!("Error connecting: {err}")),
                 );
                 continue;
             }
@@ -160,7 +161,7 @@ pub fn serial_thread(
             perform_writes(&mut port, &send_rx, &raw_data_tx, t_zero);
             perform_reads(&mut port, &raw_data_tx, t_zero);
 
-            //std::thread::sleep(Duration::from_millis(10));
+            //std::thread::sleep(10.millis());
         }
         std::mem::drop(port);
     }
@@ -189,7 +190,7 @@ fn get_device(
                 return device.clone();
             }
         }
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(100.millis());
     }
 }
 
@@ -225,7 +226,7 @@ fn perform_writes(
     raw_data_tx: &Sender<Packet>,
     t_zero: Instant,
 ) {
-    if let Ok(cmd) = send_rx.recv_timeout(Duration::from_millis(1)) {
+    if let Ok(cmd) = send_rx.recv_timeout(1.millis()) {
         if let Err(e) = serial_write(port, cmd.as_bytes()) {
             println!("Error sending command: {e}");
             return;

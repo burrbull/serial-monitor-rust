@@ -57,18 +57,18 @@ fn main_thread(
     let mut data = DataContainer::default();
     let mut failed_format_counter = 0;
     loop {
-        if let Ok(cl) = clear_rx.recv_timeout(Duration::from_millis(1)) {
+        if let Ok(cl) = clear_rx.recv_timeout(1.millis()) {
             if cl {
                 data = DataContainer::default();
                 failed_format_counter = 0;
             }
         }
 
-        if let Ok(names) = names_rx.recv_timeout(Duration::from_millis(1)) {
+        if let Ok(names) = names_rx.recv_timeout(1.millis()) {
             data.names = names;
         }
 
-        if let Ok(packet) = raw_data_rx.recv_timeout(Duration::from_millis(1)) {
+        if let Ok(packet) = raw_data_rx.recv_timeout(1.millis()) {
             if !packet.payload.is_empty() {
                 data.raw_traffic.push(packet.clone());
                 let split_data = split(&packet.payload);
@@ -111,7 +111,7 @@ fn main_thread(
             }
         }
 
-        if let Ok(csv_options) = save_rx.recv_timeout(Duration::from_millis(1)) {
+        if let Ok(csv_options) = save_rx.recv_timeout(1.millis()) {
             match save_to_csv(&data, &csv_options) {
                 Ok(_) => {
                     print_to_console(
@@ -131,7 +131,7 @@ fn main_thread(
             }
         }
 
-        // std::thread::sleep(Duration::from_millis(10));
+        // std::thread::sleep(10.millis());
     }
 }
 
@@ -225,5 +225,27 @@ fn main() {
         }),
     ) {
         println!("error: {e:?}");
+    }
+}
+
+pub trait DurationExt {
+    fn nanos(self) -> Duration;
+    fn micros(self) -> Duration;
+    fn millis(self) -> Duration;
+    fn secs(self) -> Duration;
+}
+
+impl DurationExt for u64 {
+    fn nanos(self) -> Duration {
+        Duration::from_nanos(self)
+    }
+    fn micros(self) -> Duration {
+        Duration::from_micros(self)
+    }
+    fn millis(self) -> Duration {
+        Duration::from_millis(self)
+    }
+    fn secs(self) -> Duration {
+        Duration::from_secs(self)
     }
 }
