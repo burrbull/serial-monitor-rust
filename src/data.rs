@@ -37,7 +37,7 @@ impl Default for Packet {
             relative_time: 0,
             absolute_time: get_epoch_ms(),
             direction: SerialDirection::Send,
-            payload: "".to_string(),
+            payload: String::new(),
         }
     }
 }

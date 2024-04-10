@@ -1,9 +1,9 @@
+use super::DurationExt;
 use core::f32;
 use std::ops::RangeInclusive;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, RwLock};
-use super::DurationExt;
 
 use eframe::egui::panel::Side;
 use eframe::egui::{
@@ -21,6 +21,16 @@ use crate::serial::{clear_serial_settings, save_serial_settings, Device, SerialD
 use crate::toggle::toggle;
 use crate::FileOptions;
 use crate::{APP_INFO, PREFS_KEY};
+
+use fluent_templates::{static_loader, Loader};
+use unic_langid::LanguageIdentifier;
+
+static_loader! {
+    static LOCALES = {
+        locales: "./locales",
+        fallback_language: "en-US",
+    };
+}
 
 const MAX_FPS: f64 = 60.0;
 
@@ -197,6 +207,7 @@ pub struct MyApp {
     save_raw: bool,
     show_warning_window: WindowFeedback,
     do_not_show_clear_warning: bool,
+    locale: LanguageIdentifier,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -213,6 +224,7 @@ impl MyApp {
         save_tx: Sender<FileOptions>,
         send_tx: Sender<String>,
         clear_tx: Sender<bool>,
+        locale: LanguageIdentifier,
     ) -> Self {
         Self {
             connected_to_device: false,
@@ -221,7 +233,7 @@ impl MyApp {
             old_device: "".to_string(),
             data: DataContainer::default(),
             console: vec![Print::Message(
-                "waiting for serial connection..,".to_owned(),
+                LOCALES.lookup(&locale, "waiting-connection"),
             )],
             connected_lock,
             device_lock,
@@ -247,6 +259,7 @@ impl MyApp {
             plot_location: None,
             do_not_show_clear_warning: false,
             show_warning_window: WindowFeedback::None,
+            locale,
         }
     }
 
@@ -260,7 +273,7 @@ impl MyApp {
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add_space(20.0);
-                    ui.label("Changing devices will clear all data.");
+                    ui.label(LOCALES.lookup(&self.locale, "clear-warning-window-notify-1"));
                     ui.label("How do you want to proceed?");
                     ui.add_space(20.0);
                     ui.checkbox(&mut self.do_not_show_clear_warning, "Remember my decision.");
@@ -488,7 +501,7 @@ impl MyApp {
                 ui.add_enabled_ui(true, |ui| {
                     ui.set_visible(true);
                     ui.horizontal(|ui| {
-                        ui.heading("Serial Monitor");
+                        ui.heading(LOCALES.lookup(&self.locale, "side-panel-heading"));
                         self.paint_connection_indicator(ui);
                     });
 
@@ -504,9 +517,9 @@ impl MyApp {
 
                     ui.add_space(10.0);
                     ui.horizontal(|ui| {
-                        ui.label("Device");
+                        ui.label(LOCALES.lookup(&self.locale, "device-label"));
                         ui.add_space(130.0);
-                        ui.label("Baud");
+                        ui.label(LOCALES.lookup(&self.locale, "baudrate-label"));
                     });
 
                     let old_name = self.device.clone();
@@ -589,7 +602,11 @@ impl MyApp {
                                     );
                                 });
                             });
-                        let connect_text = if self.connected_to_device { "Disconnect" } else { "Connect" };
+                        let connect_text = LOCALES.lookup(&self.locale, if self.connected_to_device {
+                            "device-disconnect-button"
+                        } else {
+                            "device-connect-button"
+                        });
                         if ui.button(connect_text).clicked() {
                             if let Ok(mut device) = self.device_lock.write() {
                                 if self.connected_to_device {
@@ -663,7 +680,7 @@ impl MyApp {
                         .spacing(Vec2 { x: 10.0, y: 10.0 })
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label("Plotting range [#]: ");
+                            ui.label(LOCALES.lookup(&self.locale, "plotting-range-label"));
 
                             let window_fmt = |val: f64, _range: RangeInclusive<usize>| {
                                 if val != usize::MAX as f64 {
@@ -676,15 +693,15 @@ impl MyApp {
                             ui.horizontal(|ui| {
                                 ui.add(egui::DragValue::new(&mut self.plotting_range)
                                     .custom_formatter(window_fmt))
-                                    .on_hover_text("Select a window of the last datapoints to be displayed in the plot.");
-                                if ui.button("Full Dataset")
-                                    .on_hover_text("Show the full dataset.")
+                                    .on_hover_text(LOCALES.lookup(&self.locale, "plotting-range-tooltip"));
+                                if ui.button(LOCALES.lookup(&self.locale, "plotting-full-button"))
+                                    .on_hover_text(LOCALES.lookup(&self.locale, "plotting-full-tooltip"))
                                     .clicked() {
                                     self.plotting_range = usize::MAX;
                                 }
                             });
                             ui.end_row();
-                            ui.label("Number of plots [#]: ");
+                            ui.label(LOCALES.lookup(&self.locale, "plot-number-label"));
 
                             ui.horizontal(|ui| {
                                 if ui.button(egui::RichText::new(egui_phosphor::regular::ARROW_FAT_LEFT.to_string())).clicked() {
@@ -693,7 +710,7 @@ impl MyApp {
                                 }
                                 ui.add(egui::DragValue::new(&mut self.serial_devices.number_of_plots[self.device_idx])
                                     .clamp_range(1..=10))
-                                    .on_hover_text("Select the number of plots to be shown.");
+                                    .on_hover_text(LOCALES.lookup(&self.locale, "plot-number-tooltip"));
                                 if ui.button(egui::RichText::new(egui_phosphor::regular::ARROW_FAT_RIGHT.to_string())).clicked() {
                                     self.serial_devices.number_of_plots[self.device_idx] =
                                         (self.serial_devices.number_of_plots[self.device_idx] + 1).clamp(1, 10);

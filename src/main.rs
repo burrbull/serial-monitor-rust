@@ -221,6 +221,7 @@ fn main() {
                 save_tx,
                 send_tx,
                 clear_tx,
+                unic_langid::langid!("uk"),
             ))
         }),
     ) {

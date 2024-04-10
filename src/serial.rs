@@ -1,8 +1,8 @@
+use super::DurationExt;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
-use super::DurationExt;
 
 use preferences::Preferences;
 use serde::{Deserialize, Serialize};
